@@ -1,0 +1,202 @@
+---
+title-meta: "SEFA - Entregables GDR"
+author-meta: Sefa
+date-meta: \today
+lang: es
+documentclass: article
+classoption: oneside
+keywords: informe, r studio, r markdown
+geometry:
+- top=2cm
+- left=2.5cm
+- right=2.5cm
+- bottom=3.5cm
+papersize: a4
+fontsize: 11pt
+header-includes:
+- \usepackage{lscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \newcommand{\Rlogo}{\protect\includegraphics[height=1.8ex,keepaspectratio]{Rlogo.png}}
+- \usepackage{floatrow}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \floatsetup[figure]{capposition=top}
+- \floatsetup[table]{capposition=top}
+- \addtolength{\skip\footins}{1pc plus 2pt}
+- \usepackage{titlesec}
+- \titleformat*{\section}{\filright \normalsize \bfseries}
+- \titleformat*{\subsection}{\normalsize\bfseries}
+- \titleformat*{\subsubsection}{\normalsize\bfseries}
+- \renewcommand{\thesection}{\Roman{section}}
+- \renewcommand{\thesubsection}{\Alph{subsection}}
+- \usepackage{helvet}
+- \renewcommand{\familydefault}{\sfdefault}
+- \usepackage{colortbl}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{hhline,colortbl}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \setlength{\headheight}{67pt}
+- \fancyhf{}
+- \renewcommand{\headrulewidth}{0pt}
+- \fancyhead[C]{\setlength{\arrayrulewidth}{0.35mm} \arrayrulecolor{white} \begin{tabular}
+  { | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{2cm}
+  | >{\arraybackslash}m{3.75cm} | >{\arraybackslash}m{6cm} |} \includegraphics[width=1cm]{peru}
+  & \cellcolor{red} \textcolor{white}{PERÚ} & \cellcolor[gray]{0.2} \scriptsize \textcolor{white}{Ministerio
+  del Ambiente} & \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Organismo de
+  Evaluación y Fiscalización Ambiental} &  \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Subdirección
+  de Seguimiento de Entidades de Fiscalización Ambiental} \\ \end{tabular}\\ \vspace{3mm}{\scriptsize
+  "Decenio de la igualdad de oportunidades para mujeres y hombres"}\\ {\scriptsize
+  "Año del Bicentenario del Perú{:} 200 años de independencia"}}
+- \fancyfoot[C]{\thepage}
+mainfont: helvet
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: no
+params:
+  ESPECIALISTA: 
+  EQUIPO: 
+  PUESTO: 
+  META_1: 
+  META_2: 
+  M_PROPUESTA: 
+  M1_LOGRADO:
+  M2_LOGRADO:
+  EQ_SEFA: 
+---
+
+```{r opciones de cada chunk de código, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, dpi=300)
+```
+
+
+```{r}
+# I. Librerías ----
+library(lubridate)
+library(dplyr)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(readxl)
+
+# II. Párametros ----
+especialista <- params$ESPECIALISTA
+equipo <- params$EQUIPO
+cargo <- params$PUESTO
+meta1 <- params$META_1
+meta2 <- params$META_2
+meta_propuesta <- params$M_PROPUESTA
+logrado_1 <- params$M1_LOGRADO
+logrado_2 <- params$M2_LOGRADO
+
+# II.I Determinar el periodo comprendido en el informe ----
+# Fecha actual
+Mes_actual <- month(now(), label=TRUE, abbr = FALSE)
+Mes_actual <- str_to_lower(Mes_actual)
+
+# Inicio de periodo
+primer_dia <- function(x) {
+    as.Date(format(x, "%Y-%m-01"))
+    }
+Inicio_mes <- primer_dia(Sys.Date())
+Inicio_periodo <- Inicio_mes %m-% months(4)
+Mes_inicio <- month(Inicio_periodo, label=TRUE, abbr = FALSE)
+Mes_inicio <- str_to_lower(Mes_inicio)
+MES_INICIO <- str_to_upper(Mes_inicio)
+# Último día del periodo
+ultimo_dia <- function(x) {
+    as.Date(format(x, "%Y-%m-30"))
+    }
+Fin_mes <- ultimo_dia(Sys.Date()) %m-% months(1)
+Mes_fin <- month(Fin_mes, label=TRUE, abbr = FALSE)
+Mes_fin <- str_to_lower(Mes_fin)
+
+
+```
+
+\centerline{\textbf{Informe GDR}}
+\vspace{3mm}
+\begin{tabular}
+{ p{2.5cm}  p{0.4cm}  p{13.5cm} }
+\textbf{Nombre} & : & \textbf{`r especialista`}\\
+& & `r cargo` \\
+& & \\
+\textbf{Asunto} & : & \text{Reporte de cumplimiento GDR 2021 - Primer avance}\\
+& & \\
+\textbf{Referencia} & : & \text{Gestión de rendimiento de OEFA}\\
+& & \\
+\textbf{Fecha} & : & Jesús María, `r day(now())` de `r Mes_actual` de `r year(now())` \\
+& & \\
+\hline
+\end{tabular}
+\vspace{1mm}
+\normalsize
+
+
+Este reporte[^1] contiene las metas correspondientes al equipo `r equipo` en el periodo comprendido entre el **`r day(Inicio_periodo)` de `r Mes_inicio` al `r day(Fin_mes)` de `r Mes_fin` de `r year(now())`**:
+
+\vspace{5mm}
+
+```{r}
+# III. Creación de tablas ----
+CABECERAS <- c("META PROPUESTA","PORCENTAJE CUMPLIDO", "CUMPLIMIENTO META")
+
+# Meta 1
+if(logrado_1 == 1) {
+  CUMPLIMIENTO_META <- "Cumplió"
+} else if(logrado_1 > 1) {
+  CUMPLIMIENTO_META <- "Superó"
+} else {
+  CUMPLIMIENTO_META <- "No cumplió"
+}
+PORCENTAJE_LOGRADO_M1 <- paste0(round(logrado_1*100),"%")
+Tabla1 <- data.frame(meta_propuesta, PORCENTAJE_LOGRADO_M1, CUMPLIMIENTO_META)
+colnames(Tabla1) <- CABECERAS
+
+# Meta 2
+if (logrado_2 == 1) {
+  CUMPLIMIENTO_META2 <- "Cumplió"
+} else if(logrado_2 > 1){
+  CUMPLIMIENTO_META2 <- "Superó"
+} else {
+  CUMPLIMIENTO_META2 <- "No cumplió"
+}
+PORCENTAJE_LOGRADO_M2 <- paste0(round(logrado_2*100),"%")
+Tabla2 <- data.frame(meta_propuesta, PORCENTAJE_LOGRADO_M2, CUMPLIMIENTO_META2)
+colnames(Tabla2) <- CABECERAS
+
+# IV. Gráfico de tablas ----
+
+# Tabla 1
+kable(Tabla1, caption = meta1, align= "ccccc", format = "latex") %>%
+  kable_styling(font_size = 10, bootstrap_options = "bordered", 
+              latex_options = "HOLD_position", full_width = FALSE) %>%
+  column_spec(1 , latex_valign = "m", width = "3.5cm",
+              border_left = TRUE) %>%
+  column_spec(2 , latex_valign = "m", width = "4.5cm") %>%
+  column_spec(3 , latex_valign = "m", width = "4.5cm",
+              border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+# Tabla 2
+kable(Tabla2, caption = meta2, align= "ccccc", format = "latex") %>%
+  kable_styling(font_size = 10, bootstrap_options = "bordered", 
+                latex_options = "HOLD_position", full_width = FALSE) %>%
+  column_spec(1 , latex_valign = "m", width = "3.5cm", 
+              border_left = TRUE) %>%
+  column_spec(2 , latex_valign = "m", width = "4.5cm") %>%
+  column_spec(3 , latex_valign = "m", width = "4.5cm", border_right = TRUE) %>%
+  row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+```
+
+\vspace{5mm}
+
+Se adjunta la evidencia correspondiente. Es todo cuanto tengo que informar.
+
+[^1]: Este reporte fue elaborado en **[R Studio](https://rstudio.com/)** utilizando [\Rlogo](https://www.r-project.org/) (versión `r getRversion()`) y [\LaTeX](https://www.latex-project.org/).
+
