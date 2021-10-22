@@ -1,0 +1,325 @@
+---
+title-meta: "Informe GDR"
+author-meta: Sefa
+date-meta: \today
+lang: es
+documentclass: article
+classoption: oneside
+keywords: informe, r studio, r markdown
+geometry:
+- top=2cm
+- left=2.5cm
+- right=2.5cm
+- bottom=3.5cm
+papersize: a4
+fontsize: 11pt
+header-includes:
+- \usepackage{lscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \newcommand{\Rlogo}{\protect\includegraphics[height=1.8ex,keepaspectratio]{Rlogo.png}}
+- \usepackage{floatrow}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \floatsetup[figure]{capposition=top}
+- \floatsetup[table]{capposition=top}
+- \addtolength{\skip\footins}{1pc plus 2pt}
+- \usepackage{titlesec}
+- \titleformat*{\section}{\filright \normalsize \bfseries}
+- \titleformat*{\subsection}{\normalsize\bfseries}
+- \titleformat*{\subsubsection}{\normalsize\bfseries}
+- \renewcommand{\thesection}{\Roman{section}}
+- \renewcommand{\thesubsection}{\Alph{subsection}}
+- \usepackage{helvet}
+- \renewcommand{\familydefault}{\sfdefault}
+- \usepackage{colortbl}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{hhline,colortbl}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \setlength{\headheight}{67pt}
+- \fancyhf{}
+- \renewcommand{\headrulewidth}{0pt}
+- \fancyhead[C]{\setlength{\arrayrulewidth}{0.35mm} \arrayrulecolor{white} \begin{tabular}
+  { | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{2cm}
+  | >{\arraybackslash}m{3.75cm} | >{\arraybackslash}m{6cm} |} \includegraphics[width=1cm]{peru}
+  & \cellcolor{red} \textcolor{white}{PERÚ} & \cellcolor[gray]{0.2} \scriptsize \textcolor{white}{Ministerio
+  del Ambiente} & \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Organismo de
+  Evaluación y Fiscalización Ambiental} &  \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Subdirección
+  de Seguimiento de Entidades de Fiscalización Ambiental} \\ \end{tabular}\\ \vspace{3mm}{\scriptsize
+  "Decenio de la igualdad de oportunidades para mujeres y hombres"}\\ {\scriptsize
+  "Año del Bicentenario del Perú{:} 200 años de Independencia"}}
+- \fancyfoot[C]{\thepage}
+mainfont: helvet
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: no
+  word_document:
+    toc: no
+params:
+  espec: "ALBERT"
+---
+
+```{r opciones de cada chunk de código, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, dpi=300)
+```
+
+
+```{r}
+
+# I. LIBRERIAS A UTILIZAR----
+
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(googledrive)
+library(googlesheets4)
+library(forcats)
+library(readxl)
+library(purrr)
+library(blastula)
+library(httpuv)
+library(huxtable)
+library(calendar)
+library(bizdays)
+library(date)
+
+
+# II. IDENTIFICARSE-----
+
+correo_usuario <- ""
+drive_auth(email = correo_usuario) 
+gs4_auth(token = drive_auth(email = correo_usuario), 
+         email = correo_usuario)
+
+# III. DESCARGANDO INFORMACION DE BASE DE DATOS----
+
+#Generar un objeto con la hoja de cálculo (Estamos convirtiendo el link de la base de datos en un objeto):
+BD_REG <- ""
+#Leer la hoja de cálculo y convertirla en un objeto:----
+# EQUIPO DE RESPUESTAS 1
+TAREAS_RPTA <- read_sheet(BD_REG, sheet = "REITERATIVOS_OCI")
+METAS_RPTA <- read_sheet(BD_REG, sheet = "Metas")
+PARAMETROS <- read_sheet(BD_REG, sheet = "PARAMETROS")
+
+
+# IV. TRANSFORMANDO INFORMACION DE LA DATA----
+
+# EQUIPO 1
+PRODUCCION_RPTA <- select(
+  TAREAS_RPTA,
+  DENUNCIA = 'Código Sinada',
+  REITERATIVO = 'Tipo y N° de documento del reiterativo',
+  FECHA_FIRMA = 'Fecha firma reiterativo',
+  ESTADO = 'ESTADO',
+  NOMBRE
+)
+
+
+PRODUCCION_RPTA2 <- select(
+  TAREAS_RPTA,
+  DENUNCIA = 'Código Sinada',
+  OCI = 'Tipo y N° de documento del informe al OCI',
+  FECHA_FIRMA2 = 'Fecha de firma OCI',
+  ESTADO = 'ESTADO_reiterativo',
+  NOMBRE
+)
+rm(TAREAS_RPTA)
+
+METAS_IDEAL_RPTA <- select(
+  METAS_RPTA,
+  DATOS_ACTUALES = 'MES',
+  ESPECIALISTA = 'NOMBRE_COMPLETO',
+  NOMBRE_UNICO,
+  ESTADO,
+  INICIO_PERIODO,
+  FIN_PERIODO
+)
+rm(METAS_RPTA)
+
+PARAMETROS2 <- select(
+  PARAMETROS,
+  FERIADOS = 'FERIADOS',
+  ESPECIALISTA = 'Nombre completo',
+  CARGO
+)
+
+
+rm(DIAS_LABORADOS_RPTA)
+
+# V. SELECCIONANDO ESPECIALISTA----
+
+LISTADO_ESPEC <-  METAS_IDEAL_RPTA %>% filter(ESTADO == 'ACTIVO')
+totalespecialistas0 = LISTADO_ESPEC$ESPECIALISTA
+resumido = LISTADO_ESPEC$NOMBRE_UNICO
+especialistas0 <- as.data.frame(cbind(totalespecialistas0,resumido))
+especialistas0 <- especialistas0[!is.na(especialistas0$resumido),]
+
+espec <- as.character(especialistas0[especialistas0$resumido == params$espec, 1]) #esto facilita la impresión masiva de reportes
+
+
+# VI. LIMPIANDO DATA----
+ 
+metas_final1 <- METAS_IDEAL_RPTA %>% filter(DATOS_ACTUALES == "MES_ACTUAL") %>% 
+  filter(ESPECIALISTA == espec)
+
+PARAMETROS3 <- PARAMETROS2 %>% filter(ESPECIALISTA == espec)
+
+# VII. PERIODO DEL INFORME----
+
+INICIO <- metas_final1 %>% select(INICIO_PERIODO)
+INICIOFECHA <- as.Date(INICIO$INICIO_PERIODO)
+Mes_inicio <- month(INICIOFECHA, label=TRUE, abbr = FALSE)
+Mes_inicio <- str_to_lower(Mes_inicio)
+FIN <- metas_final1 %>% select(FIN_PERIODO)
+FINFECHA <- as.Date(FIN$FIN_PERIODO)
+Mes_fin <- month(FINFECHA, label=TRUE, abbr = FALSE)
+Mes_fin <- str_to_lower(Mes_fin)
+Mes_actual <- month(now(), label=TRUE, abbr = FALSE)
+Mes_actual <- str_to_lower(Mes_actual)
+
+# VIII. DATA CON PERIODO DE CORTE----
+
+# META 1 - REITERATIVO
+datos_final2 <- filter(PRODUCCION_RPTA,PRODUCCION_RPTA$FECHA_FIRMA >= INICIOFECHA & PRODUCCION_RPTA$FECHA_FIRMA <= FINFECHA) %>% arrange(FECHA_FIRMA)
+Cantidad_productos_rpta_eq1 <- data.frame(table(datos_final2$NOMBRE))
+REITERATIVOS_ENPLAZO <- filter(datos_final2,datos_final2$ESTADO == 'En plazo')
+Cantidad_productos_enplazo <- data.frame(table(REITERATIVOS_ENPLAZO$NOMBRE))
+
+# META 2 - OCI
+datos_final3 <- filter(PRODUCCION_RPTA2,PRODUCCION_RPTA2$FECHA_FIRMA2 >= INICIOFECHA & PRODUCCION_RPTA2$FECHA_FIRMA2 <= FINFECHA) %>% arrange(FECHA_FIRMA2)
+Cantidad2_productos_rpta_eq1 <- data.frame(table(datos_final3$NOMBRE))
+oci_ENPLAZO <- filter(datos_final3,datos_final3$ESTADO == 'En plazo')
+Cantidad_oci_enplazo <- data.frame(table(oci_ENPLAZO$NOMBRE))
+
+
+
+```
+\rightline{\footnotesize \textbf{}}
+\vspace{1mm}
+\centerline{\textbf{Informe GDR}}
+\vspace{3mm}
+\begin{tabular}
+{ p{2.5cm}  p{0.2cm}  p{12cm} }
+\textbf{Nombre} & : & \textbf{`r espec`}\\
+& & `r PARAMETROS3$CARGO` \\
+& & \\
+\textbf{Asunto} & : & Reporte de cumplimiento GDR 2021 - Primer avance\\
+& & \\
+\textbf{Referencia} & : & Gestión del Rendimiento de OEFA\\
+& & \\
+\textbf{Fecha} & : & Jesús María, `r day(now())` de `r Mes_actual` de `r year(now())` \\
+& & \\
+\hline
+\end{tabular}
+\vspace{1mm}
+\normalsize
+
+
+
+```{r}
+
+# IX. CREANDO TABLA DE PRODUCCION----
+
+Produccion1eq1 <- data.frame(
+  "No." = seq(1:nrow(REITERATIVOS_ENPLAZO)),
+  "Denuncia" = REITERATIVOS_ENPLAZO$DENUNCIA,
+  "Reiterativo" = REITERATIVOS_ENPLAZO$REITERATIVO,
+  "Fecha acción" = REITERATIVOS_ENPLAZO$FECHA_FIRMA
+)
+
+Produccion2eq1 <- data.frame(
+  "No." = seq(1:nrow(oci_ENPLAZO)),
+  "Denuncia" = oci_ENPLAZO$DENUNCIA,
+  "Comunicación OCI" = oci_ENPLAZO$OCI,
+  "Fecha acción" = oci_ENPLAZO$FECHA_FIRMA2
+)
+
+
+# X. RESULTADOS----
+
+RESULTADO_META1 <- round((Cantidad_productos_enplazo$Freq / (Cantidad_productos_rpta_eq1$Freq)), 2) * 100
+
+Meta_rptas_eq1 <- data.frame(
+  "META PROPUESTA" = "100%",
+  "PORCENTAJE CUMPLIDO" = paste0(RESULTADO_META1, "%"),
+  "CUMPLIMIENTO META" = if(RESULTADO_META1<100){'No cumplió'} else
+  {if(RESULTADO_META1>100){'Superó'} else{'Cumplió'}})
+
+RESULTADO_META2 <- round((Cantidad_oci_enplazo$Freq / (Cantidad2_productos_rpta_eq1$Freq)), 2) * 100
+
+Meta2_rptas_eq1 <- data.frame(
+  "META PROPUESTA" = "100%",
+  "PORCENTAJE CUMPLIDO" = paste0(RESULTADO_META2, "%"),
+  "CUMPLIMIENTO META" = if(RESULTADO_META2<100){'No cumplió'} else
+  {if(RESULTADO_META2>100){'Superó'} else{'Cumplió'}})
+
+```
+
+Este reporte[^1] contiene las metas correspondiente al equipo del Servicio de Información Nacional de Denuncias Ambientales en el periodo comprendido entre el **`r day(INICIOFECHA)` de `r Mes_inicio` al `r day(FINFECHA)` de `r Mes_fin` de `r year(FINFECHA)`**:
+
+```{r}
+
+# XI. TABLA DE RESULTADOS----
+
+kable(Meta_rptas_eq1, caption = "Porcentaje de reiterativos remitidos en el trámite de las denuncias ambientales de acuerdo al MAPRO", col.names = gsub("[.]", " ", names(Meta_rptas_eq1)), format = "latex", align = "ccc") %>%
+kable_styling(font_size = 10, bootstrap_options = "bordered", latex_options = "HOLD_position", full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "5cm") %>%
+column_spec(3 , latex_valign = "m", width = "5cm", border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+
+kable(Meta2_rptas_eq1, caption = "Porcentaje de informes a OCI remitidos en el trámite de las denuncias ambientales de acuerdo al MAPRO", col.names = gsub("[.]", " ", names(Meta_rptas_eq1)), format = "latex", align = "ccc") %>%
+kable_styling(font_size = 10, bootstrap_options = "bordered", latex_options = "HOLD_position", full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "5cm") %>%
+column_spec(3 , latex_valign = "m", width = "5cm", border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+```
+
+Se adjunta la evidencia correspondiente. Es todo cuanto tengo que informar.
+
+
+
+
+```{r}
+
+# XII. EXPORTAR EXCEL DE TAREAS-----------
+
+#install.packages("writexl")
+library(writexl) 
+library(xlsx)
+library(readxl)
+
+setwd("")
+dir <- ""
+
+carpeta = file.path(dir)
+
+n_archivo = paste0("Informe_Sinada_",espec,".xlsx")
+  
+  write.xlsx(Produccion1eq1, 
+             file = file.path(carpeta, n_archivo),
+             sheetName = "Meta 1")
+  
+  write.xlsx(Produccion2eq1, 
+             file = file.path(carpeta, n_archivo),
+             sheetName = "Meta 2",
+             append = TRUE)
+
+write_xlsx(Meta_rptas_eq1, paste0("ResultadosM1_",espec,".xlsx"))
+write_xlsx(Meta2_rptas_eq1, paste0("ResultadosM2_",espec,".xlsx"))
+
+
+```
+
+[^1]: Este reporte fue elaborado en **[R Studio](https://rstudio.com/)** utilizando [\Rlogo](https://www.r-project.org/) (versión `r getRversion()`) y [\LaTeX](https://www.latex-project.org/).

@@ -1,0 +1,291 @@
+---
+title-meta: "Informe GDR"
+author-meta: Sefa
+date-meta: \today
+lang: es
+documentclass: article
+classoption: oneside
+keywords: informe, r studio, r markdown
+geometry:
+- top=2cm
+- left=2.5cm
+- right=2.5cm
+- bottom=3.5cm
+papersize: a4
+fontsize: 11pt
+header-includes:
+- \usepackage{lscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \newcommand{\Rlogo}{\protect\includegraphics[height=1.8ex,keepaspectratio]{Rlogo.png}}
+- \usepackage{floatrow}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \floatsetup[figure]{capposition=top}
+- \floatsetup[table]{capposition=top}
+- \addtolength{\skip\footins}{1pc plus 2pt}
+- \usepackage{titlesec}
+- \titleformat*{\section}{\filright \normalsize \bfseries}
+- \titleformat*{\subsection}{\normalsize\bfseries}
+- \titleformat*{\subsubsection}{\normalsize\bfseries}
+- \renewcommand{\thesection}{\Roman{section}}
+- \renewcommand{\thesubsection}{\Alph{subsection}}
+- \usepackage{helvet}
+- \renewcommand{\familydefault}{\sfdefault}
+- \usepackage{colortbl}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{hhline,colortbl}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \setlength{\headheight}{67pt}
+- \fancyhf{}
+- \renewcommand{\headrulewidth}{0pt}
+- \fancyhead[C]{\setlength{\arrayrulewidth}{0.35mm} \arrayrulecolor{white} \begin{tabular}
+  { | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{2cm}
+  | >{\arraybackslash}m{3.75cm} | >{\arraybackslash}m{6cm} |} \includegraphics[width=1cm]{peru}
+  & \cellcolor{red} \textcolor{white}{PERÚ} & \cellcolor[gray]{0.2} \scriptsize \textcolor{white}{Ministerio
+  del Ambiente} & \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Organismo de
+  Evaluación y Fiscalización Ambiental} &  \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Subdirección
+  de Seguimiento de Entidades de Fiscalización Ambiental} \\ \end{tabular}\\ \vspace{3mm}{\scriptsize
+  "Decenio de la igualdad de oportunidades para mujeres y hombres"}\\ {\scriptsize
+  "Año del Bicentenario del Perú{:} 200 años de Independencia"}}
+- \fancyfoot[C]{\thepage}
+mainfont: helvet
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: no
+  word_document:
+    toc: no
+params:
+  espec: "EDUARDO"
+---
+
+```{r opciones de cada chunk de código, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, dpi=300)
+```
+
+
+```{r}
+
+# I. LIBRERIAS A UTILIZAR----
+
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(googledrive)
+library(googlesheets4)
+library(forcats)
+library(readxl)
+library(purrr)
+library(blastula)
+library(httpuv)
+library(huxtable)
+library(calendar)
+library(bizdays)
+library(date)
+library(readxl)
+
+# II. IMPORTANDO DATA----
+
+SINADA2_TAREA <- read_excel("SINADA2_DATA.xlsx", sheet = "TAREAS")
+FERIADOS <- read_excel("FERIADOS.xlsx")
+
+# III. PERIODO DEL INFORME----
+
+INICIOFECHA <- FERIADOS[!is.na(FERIADOS$INICIO_PERIODO),]
+INICIOFECHA <- as.Date(INICIOFECHA$INICIO_PERIODO)
+Mes_inicio <- month(INICIOFECHA, label=TRUE, abbr = FALSE)
+Mes_inicio <- str_to_lower(Mes_inicio)
+FINFECHA <- FERIADOS[!is.na(FERIADOS$FIN_PERIODO),]
+FINFECHA <- as.Date(FINFECHA$FIN_PERIODO)
+Mes_fin <- month(FINFECHA, label=TRUE, abbr = FALSE)
+Mes_fin <- str_to_lower(Mes_fin)
+Mes_actual <- month(now(), label=TRUE, abbr = FALSE)
+Mes_actual <- str_to_lower(Mes_actual)
+
+# IV. DATA CON PERIODO DE CORTE----
+
+valor2 <- filter(SINADA2_TAREA,
+                 SINADA2_TAREA$FECHA_ACCION1 >= INICIOFECHA & 
+                   SINADA2_TAREA$FECHA_ACCION1 <= FINFECHA) %>% 
+  arrange(FECHA_ACCION1)
+
+Cantidad2_productos_rpta_eq1 <- data.frame(table(valor2$JEFE))
+
+EVIDENCIA1 <- filter(valor2,
+                     valor2$FECHA_ACCION >= INICIOFECHA & 
+                       valor2$FECHA_ACCION <= FINFECHA) %>% 
+  arrange(FECHA_ACCION)
+
+Cantidad_productos_rpta_eq1 <- data.frame(table(EVIDENCIA1$JEFE))
+
+# V. CREANDO TABLA DE PRODUCCION----
+
+Produccion1eq1 <- data.frame(
+  "No." = seq(1:nrow(EVIDENCIA1)),
+  "Denuncia" = EVIDENCIA1$DENUNCIA,
+  "Fecha aprobación" = EVIDENCIA1$FECHA_ACCION
+)
+
+# VI. INFORMACION DE LAS METAS DEL EQUIPO----
+
+
+
+Datakarem <- read_excel(".xlsx")
+Datakarem <- mutate(
+  Datakarem, ESPECIALISTA = ifelse(Datakarem$CUMPLIMIENTO.META != "", 'KAREM VIÑAS RAMIREZ', "")
+)
+
+
+Dataleslie <- read_excel(".xlsx")
+Dataleslie <- mutate(
+  Dataleslie, ESPECIALISTA = ifelse(Dataleslie$CUMPLIMIENTO.META != "", 'LESLIE ELIZABETH TERRONES CERNAQUE', "")
+)
+
+
+Dataisidro <- read_excel(".xlsx")
+Dataisidro <- mutate(
+  Dataisidro, ESPECIALISTA = ifelse(Dataisidro$CUMPLIMIENTO.META != "", 'ISIDRO EDGAR TANTA HUACCAN', "")
+)
+
+
+Dataana <- read_excel(".xlsx")
+Dataana <- mutate(
+  Dataana, ESPECIALISTA = ifelse(Dataana$CUMPLIMIENTO.META != "", 'ANA PAULA SARAVIA PANTE', "")
+)
+
+
+Dataeli <- read_excel(".xlsx")
+Dataeli <- mutate(
+  Dataeli, ESPECIALISTA = ifelse(Dataeli$CUMPLIMIENTO.META != "", 'ELIZABETH REYNA ESPINOZA VALERIO', "")
+)
+
+
+Datamonica <- read_excel(".xlsx")
+Datamonica <- mutate(
+  Datamonica, ESPECIALISTA = ifelse(Datamonica$CUMPLIMIENTO.META != "", 'MONICA ARCE SAAVEDRA', "")
+)
+
+
+# VII. RESULTADOS----
+
+RESULTADO_META1 <- round((Cantidad_productos_rpta_eq1$Freq / (Cantidad2_productos_rpta_eq1$Freq)), 2) * 100
+
+Meta2_rptas_eq1 <- data.frame(
+  "META PROPUESTA" = "100%",
+  "PORCENTAJE CUMPLIDO" = paste0(RESULTADO_META1, "%"),
+  "CUMPLIMIENTO META" = if(RESULTADO_META1<100){'No cumplió'} else
+  {if(RESULTADO_META1>100){'Superó'} else{'Cumplió'}})
+
+RESULTADOS_GENERAL <- rbind(Datakarem, Dataleslie, Dataisidro, Dataana, Dataeli, Datamonica)
+RESULTADOS_GENERAL <- select(
+  RESULTADOS_GENERAL,
+  ESPECIALISTA,
+  META.PROPUESTA,
+  PORCENTAJE.CUMPLIDO,
+  CUMPLIMIENTO.META
+  
+)
+
+# VIII. DATOS DEL JEFE----
+
+
+totalespecialistas1 <- FERIADOS[!is.na(FERIADOS$NOMBRE_COMPLETO),]
+
+
+totalespecialistas0 = totalespecialistas1$NOMBRE_COMPLETO
+resumido = totalespecialistas1$NOMBRE_UNICO2
+especialistas0 <- as.data.frame(cbind(totalespecialistas0,resumido))
+
+espec <- totalespecialistas1$NOMBRE_COMPLETO #esto facilita la impresión masiva de reportes
+
+```
+
+
+\rightline{\footnotesize \textbf{}}
+\vspace{1mm}
+\centerline{\textbf{Informe GDR}}
+\vspace{3mm}
+\begin{tabular}
+{ p{2.5cm}  p{0.2cm}  p{12cm} }
+\textbf{Nombre} & : & \textbf{`r espec`}\\
+& & `r totalespecialistas1$CARGO` \\
+& & \\
+\textbf{Asunto} & : & Reporte de cumplimiento GDR 2021 - Primer avance\\
+& & \\
+\textbf{Referencia} & : & Gestión del Rendimiento de OEFA\\
+& & \\
+\textbf{Fecha} & : & Jesús María, `r day(now())` de `r Mes_actual` de `r year(now())` \\
+& & \\
+\hline
+\end{tabular}
+\vspace{1mm}
+\normalsize
+
+
+Este reporte[^1] contiene las metas correspondiente al equipo del Servicio de Información Nacional de Denuncias Ambientales (equipo 2) [^2] en el periodo comprendido entre el **`r day(INICIOFECHA)` de `r Mes_inicio` al `r day(FINFECHA)` de `r Mes_fin` de `r year(FINFECHA)`**:
+
+```{r}
+
+# IX. TABLA DE RESULTADOS----
+
+kable(Meta2_rptas_eq1, caption = "Porcentaje del logro alcanzado en la búsqueda, revisión y calificación de documentos y respuestas de las EFA, para la atención de denuncias de acuerdo a las Reglas del Sinada", col.names = gsub("[.]", " ", names(Meta2_rptas_eq1)), format = "latex", align = "ccc") %>%
+kable_styling(font_size = 10, bootstrap_options = "bordered", latex_options = "HOLD_position", full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "5cm") %>%
+column_spec(3 , latex_valign = "m", width = "5cm", border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+```
+
+
+Se adjunta la evidencia correspondiente. Es todo cuanto tengo que informar.
+
+
+
+
+
+\newpage
+
+
+\centerline{\textbf{ANEXOS}}
+
+
+```{r}
+
+kable(RESULTADOS_GENERAL, caption = "Porcentaje del logro alcanzado en la búsqueda, revisión y calificación de documentos y respuestas de las EFA, para la atención de denuncias de acuerdo a las Reglas del Sinada", col.names = gsub("[.]", " ", names(RESULTADOS_GENERAL)), format = "latex", align = "cccc",longtable = FALSE) %>%
+kable_styling(font_size = 12, bootstrap_options = "bordered", latex_options = c("HOLD_position","scale_down"), full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "5cm") %>%
+column_spec(3 , latex_valign = "m", width = "5cm", border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+```
+
+
+```{r}
+
+# X. EXPORTAR EXCEL DE TAREAS-----------
+
+#install.packages("writexl")
+library(writexl) 
+
+setwd("C:/Users/lucia/Desktop/R Studio/Generar reporte/Equipo 1 sinada_reportes/NUEVOS SCRIPTS")
+
+write_xlsx(Produccion1eq1, paste0("Informe_Sinada_",espec,".xlsx"))
+
+
+```
+
+[^1]: Este reporte fue elaborado en **[R Studio](https://rstudio.com/)** utilizando [\Rlogo](https://www.r-project.org/) (versión `r getRversion()`) y [\LaTeX](https://www.latex-project.org/).
+
+
+[^2]: El resultado obtenido por el jefe del equipo es el promedio de los logros obtenidos por el personal a su cargo.
+

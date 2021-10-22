@@ -1,0 +1,252 @@
+---
+title-meta: "Informe GDR"
+author-meta: Sefa
+date-meta: \today
+lang: es
+documentclass: article
+classoption: oneside
+keywords: informe, r studio, r markdown
+geometry:
+- top=2cm
+- left=2.5cm
+- right=2.5cm
+- bottom=3.5cm
+papersize: a4
+fontsize: 11pt
+header-includes:
+- \usepackage{lscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \newcommand{\Rlogo}{\protect\includegraphics[height=1.8ex,keepaspectratio]{Rlogo.png}}
+- \usepackage{floatrow}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \floatsetup[figure]{capposition=top}
+- \floatsetup[table]{capposition=top}
+- \addtolength{\skip\footins}{1pc plus 2pt}
+- \usepackage{titlesec}
+- \titleformat*{\section}{\filright \normalsize \bfseries}
+- \titleformat*{\subsection}{\normalsize\bfseries}
+- \titleformat*{\subsubsection}{\normalsize\bfseries}
+- \renewcommand{\thesection}{\Roman{section}}
+- \renewcommand{\thesubsection}{\Alph{subsection}}
+- \usepackage{helvet}
+- \renewcommand{\familydefault}{\sfdefault}
+- \usepackage{colortbl}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{hhline,colortbl}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \setlength{\headheight}{67pt}
+- \fancyhf{}
+- \renewcommand{\headrulewidth}{0pt}
+- \fancyhead[C]{\setlength{\arrayrulewidth}{0.35mm} \arrayrulecolor{white} \begin{tabular}
+  { | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{2cm}
+  | >{\arraybackslash}m{3.75cm} | >{\arraybackslash}m{6cm} |} \includegraphics[width=1cm]{peru}
+  & \cellcolor{red} \textcolor{white}{PERÚ} & \cellcolor[gray]{0.2} \scriptsize \textcolor{white}{Ministerio
+  del Ambiente} & \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Organismo de
+  Evaluación y Fiscalización Ambiental} &  \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Subdirección
+  de Seguimiento de Entidades de Fiscalización Ambiental} \\ \end{tabular}\\ \vspace{3mm}{\scriptsize
+  "Decenio de la igualdad de oportunidades para mujeres y hombres"}\\ {\scriptsize
+  "Año del Bicentenario del Perú{:} 200 años de Independencia"}}
+- \fancyfoot[C]{\thepage}
+mainfont: helvet
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: no
+  word_document:
+    toc: no
+params:
+  listado: "MONICA"
+---
+
+```{r opciones de cada chunk de código, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, dpi=300)
+```
+
+```{r}
+
+# I. LIBRERIAS A UTILIZAR----
+
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(googledrive)
+library(googlesheets4)
+library(forcats)
+library(readxl)
+library(purrr)
+library(blastula)
+library(httpuv)
+library(huxtable)
+library(calendar)
+library(bizdays)
+library(date)
+
+
+# II. IMPORTANDO DATA----
+
+SINADA2_TAREA <- read_excel("SINADA2_DATA.xlsx", sheet = "TAREAS")
+SINADA2_METAS <- read_excel("SINADA2_DATA.xlsx", sheet = "METAS")
+SINADA2_NOLABORADOS <- read_excel("SINADA2_DATA.xlsx", sheet = "NOLABORADOS")
+FERIADOS <- read_excel("FERIADOS.xlsx")
+
+
+# III. SELECCIONANDO ESPECIALISTA----
+
+LISTADO_ESPEC <-  SINADA2_METAS %>% filter(ESTADO == 'ACTIVO')
+totalespecialistas0 = LISTADO_ESPEC$ESPECIALISTA
+resumido = LISTADO_ESPEC$NOMBRE_UNICO
+especialistas0 <- as.data.frame(cbind(totalespecialistas0,resumido))
+especialistas0 <- especialistas0[!is.na(especialistas0$resumido),]
+
+listado <- as.character(especialistas0[especialistas0$resumido == params$listado, 1]) #esto facilita la impresión masiva de reportes
+
+
+# IV. LIMPIANDO DATA----
+
+datos_final1 <- SINADA2_TAREA %>% filter(ESPECIALISTA == listado)
+
+metas_final1 <- SINADA2_METAS %>% filter(DATOS_ACTUALES == "MES_ACTUAL") %>% 
+  filter(ESPECIALISTA == listado)
+
+dias_no_trabajados <- SINADA2_NOLABORADOS %>% filter(ESPECIALISTA == listado)
+
+# V. PERIODO DEL INFORME----
+
+INICIO <- metas_final1 %>% select(INICIO_PERIODO)
+INICIOFECHA <- as.Date(INICIO$INICIO_PERIODO)
+Mes_inicio <- month(INICIOFECHA, label=TRUE, abbr = FALSE)
+Mes_inicio <- str_to_lower(Mes_inicio)
+FIN <- metas_final1 %>% select(FIN_PERIODO)
+FINFECHA <- as.Date(FIN$FIN_PERIODO)
+Mes_fin <- month(FINFECHA, label=TRUE, abbr = FALSE)
+Mes_fin <- str_to_lower(Mes_fin)
+Mes_actual <- month(now(), label=TRUE, abbr = FALSE)
+Mes_actual <- str_to_lower(Mes_actual)
+
+# VI. DATA CON PERIODO DE CORTE----
+
+datos_final1 <- filter(datos_final1,datos_final1$FECHA_ACCION >= INICIOFECHA & datos_final1$FECHA_ACCION <= FINFECHA) %>% arrange(FECHA_ACCION)
+Cantidad_productos_rpta_eq1 <- data.frame(table(datos_final1$ESPECIALISTA))
+
+
+```
+\rightline{\footnotesize \textbf{}}
+\vspace{1mm}
+\centerline{\textbf{Informe GDR}}
+\vspace{3mm}
+\begin{tabular}
+{ p{2.5cm}  p{0.2cm}  p{12cm} }
+\textbf{Nombre} & : & \textbf{`r listado`}\\
+& & `r metas_final1$CARGO` \\
+& & \\
+\textbf{Asunto} & : & Reporte de cumplimiento GDR 2021 - Primer avance\\
+& & \\
+\textbf{Referencia} & : & Gestión del Rendimiento de OEFA\\
+& & \\
+\textbf{Fecha} & : & Jesús María, `r day(now())` de `r Mes_actual` de `r year(now())` \\
+& & \\
+\hline
+\end{tabular}
+\vspace{1mm}
+\normalsize
+
+
+
+```{r}
+
+# VII. CREANDO TABLA DE PRODUCCION----
+
+Produccioneq1 <- data.frame(
+  "No." = seq(1:nrow(datos_final1)),
+  "Denuncia" = datos_final1$DENUNCIA,
+  "Fecha" = as.character(datos_final1$FECHA_ACCION, format="%d/%m/%Y"),
+  "Producto" = datos_final1$PRODUCTO_ACCION,
+  "HT" = datos_final1$HOJA_TRAMITE_PRODUCTO,
+  "Doc" = datos_final1$NUMERO_DOC
+)
+
+# VIII. FERIADOS Y DIAS NO TRABAJADOS----
+
+FERIADOS0 <- FERIADOS[!is.na(FERIADOS$FERIADOS),]
+Feriados <- date(FERIADOS0$FERIADOS)
+
+  Calendario_Peru <- create.calendar(
+    "Calendario_Perú", 
+    holidays = c(Feriados, dias_no_trabajados$DIAS_NO_TRABAJADOS),
+    weekdays = c("saturday", "sunday"),
+    start.date = INICIOFECHA,
+    end.date = FINFECHA,
+    adjust.from = adjust.next,
+    adjust.to = adjust.next,
+    financial = FALSE
+    )
+  
+Dias_laborables = bizdays(
+        INICIOFECHA,
+        FINFECHA,
+        Calendario_Peru
+      )
+
+Meta_diaria1 <- select(
+  metas_final1,
+  META_DIARIA_IDEAL_SELECCIONADA = 'TAREAS_IDEAL_DIARIO'
+)
+
+# IX. RESULTADOS----
+
+RESULTADO_META1 <- round((Cantidad_productos_rpta_eq1$Freq / (Meta_diaria1$META_DIARIA_IDEAL_SELECCIONADA*(Dias_laborables))), 2) * 100
+
+Meta_rptas_eq1 <- data.frame(
+  "META PROPUESTA" = "100%",
+  "PORCENTAJE CUMPLIDO" = paste0(RESULTADO_META1, "%"),
+  "CUMPLIMIENTO META" = if(RESULTADO_META1<100){'No cumplió'} else
+  {if(RESULTADO_META1>100){'Superó'} else{'Cumplió'}})
+
+
+
+```
+
+Este reporte[^1] contiene las metas correspondiente al equipo del Servicio de Información Nacional de Denuncias Ambientales en el periodo comprendido entre el **`r day(INICIOFECHA)` de `r Mes_inicio` al 10 de setiembre de `r year(FINFECHA)`**:
+
+```{r}
+# X. TABLA DE RESULTADOS----
+
+kable(Meta_rptas_eq1, caption = metas_final1$DESCRIPCION_META, col.names = gsub("[.]", " ", names(Meta_rptas_eq1)), format = "latex", align = "ccc") %>%
+kable_styling(font_size = 10, bootstrap_options = "bordered", latex_options = "HOLD_position", full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "5cm") %>%
+column_spec(3 , latex_valign = "m", width = "5cm", border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+```
+
+
+Se adjunta la evidencia correspondiente. Es todo cuanto tengo que informar.
+
+
+
+```{r}
+
+# XI. EXPORTAR EXCEL DE TAREAS-----------
+
+#install.packages("writexl")
+library(writexl) 
+
+setwd("")
+
+write_xlsx(Produccioneq1, paste0("Informe_Sinada_",listado,".xlsx"))
+write_xlsx(Meta_rptas_eq1, paste0("ResultadosM1_",listado,".xlsx"))
+
+
+```
+
+[^1]: Este reporte fue elaborado en **[R Studio](https://rstudio.com/)** utilizando [\Rlogo](https://www.r-project.org/) (versión `r getRversion()`) y [\LaTeX](https://www.latex-project.org/).
