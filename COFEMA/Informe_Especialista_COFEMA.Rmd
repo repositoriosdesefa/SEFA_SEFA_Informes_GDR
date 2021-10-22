@@ -1,0 +1,273 @@
+---
+title-meta: "Informe GDR"
+author-meta: Sefa
+date-meta: \today
+lang: es
+documentclass: article
+classoption: oneside
+keywords: informe, r studio, r markdown
+geometry:
+- top=2cm
+- left=2.5cm
+- right=2.5cm
+- bottom=3.5cm
+papersize: a4
+fontsize: 11pt
+header-includes:
+- \usepackage{lscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \newcommand{\Rlogo}{\protect\includegraphics[height=1.8ex,keepaspectratio]{Rlogo.png}}
+- \usepackage{floatrow}
+- \floatplacement{figure}{H}
+- \floatplacement{table}{H}
+- \floatsetup[figure]{capposition=top}
+- \floatsetup[table]{capposition=top}
+- \addtolength{\skip\footins}{1pc plus 2pt}
+- \usepackage{titlesec}
+- \titleformat*{\section}{\filright \normalsize \bfseries}
+- \titleformat*{\subsection}{\normalsize\bfseries}
+- \titleformat*{\subsubsection}{\normalsize\bfseries}
+- \renewcommand{\thesection}{\Roman{section}}
+- \renewcommand{\thesubsection}{\Alph{subsection}}
+- \usepackage{helvet}
+- \renewcommand{\familydefault}{\sfdefault}
+- \usepackage{colortbl}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{hhline,colortbl}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \setlength{\headheight}{67pt}
+- \fancyhf{}
+- \renewcommand{\headrulewidth}{0pt}
+- \fancyhead[C]{\setlength{\arrayrulewidth}{0.35mm} \arrayrulecolor{white} \begin{tabular}
+  { | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{1cm} | >{\arraybackslash}m{2cm}
+  | >{\arraybackslash}m{3.75cm} | >{\arraybackslash}m{6cm} |} \includegraphics[width=1cm]{peru}
+  & \cellcolor{red} \textcolor{white}{PERÚ} & \cellcolor[gray]{0.2} \scriptsize \textcolor{white}{Ministerio
+  del Ambiente} & \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Organismo de
+  Evaluación y Fiscalización Ambiental} &  \cellcolor[gray]{0.5} \scriptsize \textcolor{white}{Subdirección
+  de Seguimiento de Entidades de Fiscalización Ambiental} \\ \end{tabular}\\ \vspace{3mm}{\scriptsize
+  "Decenio de la igualdad de oportunidades para mujeres y hombres"}\\ {\scriptsize
+  "Año del Bicentenario del Perú{:} 200 años de independencia"}}
+- \fancyfoot[C]{\thepage}
+mainfont: helvet
+output:
+  pdf_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: no
+  word_document:
+    toc: no
+params:
+  Nombre: 
+  Especialista: 
+  Puesto: 
+  Tarea1: "Diligencias"
+  Tarea2: "REMISION DE INFORMACION A"
+  Tarea3: "REMISION DE INFORMACION B"
+  Tarea4: "SOLICITUD DE INFORMACIÓN"
+  meta1: 
+  meta2: 
+  meta_propuesta: 
+---
+
+```{r opciones de cada chunk de código, echo=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, dpi=300)
+```
+
+
+```{r}
+# I. Librerías y parámetros ----
+# Librerías
+library(lubridate)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(googledrive)
+library(googlesheets4)
+library(forcats)
+library(readxl)
+library(WriteXLS)
+library(openxlsx)
+# Parámetros
+Nombre <- params$Nombre
+Especialista <- params$Especialista
+Puesto <- params$Puesto
+Tarea1 <- params$Tarea1
+Tarea2 <- params$Tarea2
+Tarea3 <- params$Tarea3
+Tarea4 <- params$Tarea4
+meta1  <- params$meta1
+meta2 <- params$meta2
+meta_propuesta <- params$meta_propuesta
+datos_final <- COFEMA_ENTREGABLES %>% 
+  filter(COFEMA_ENTREGABLES$ESPECIALISTA == Especialista) %>% 
+  filter(Tarea == Tarea1|
+         Tarea == Tarea2|
+         Tarea == Tarea3|
+         Tarea == Tarea4)
+
+# I.1 Determinar el periodo comprendido en el informe ----
+ som <- function(x) {
+    as.Date(format(x, "%Y-%m-01"))
+    }
+Inicio <- som(som(Sys.Date()) - 1)
+Fin <- som(Sys.Date()) - 1
+Inicio_periodo <- Inicio %m-% months(3)
+#Fin <- Sys.Date()
+Mes_inicio <- month(Inicio_periodo, label=TRUE, abbr = FALSE)
+Mes_inicio <- str_to_lower(Mes_inicio)
+MES_INICIO <- str_to_upper(Mes_inicio)
+Mes_fin <- month(Fin, label=TRUE, abbr = FALSE)
+Mes_fin <- str_to_lower(Mes_fin)
+Mes_actual <- month(now(), label=TRUE, abbr = FALSE)
+Mes_actual <- str_to_lower(Mes_actual)
+
+
+# II. Carga de información ----
+COFEMA_ENTREGABLES <- read_xlsx("")
+# Directorio donde se guaradarn los documentos generados
+dir <- ""
+
+  
+```
+
+\centerline{\textbf{Informe GDR}}
+\vspace{3mm}
+\begin{tabular}
+{ p{4cm}  p{0.4cm}  p{12cm} }
+\textbf{Nombres y Apellidos} & : & \textbf{`r Nombre`}\\
+& & \text{`r Puesto`} \\
+& & \\
+\textbf{Asunto} & : & \text{Reporte de cumplimiento GDR - Primer avance}\\
+& & \\
+\textbf{Referencia} & : & \text{Gestión de rendimiento de OEFA}\\
+& & \\
+\textbf{Fecha} & : & Jesús María, `r day(now())` de `r Mes_actual` de `r year(now())` \\
+& & \\
+\hline
+\end{tabular}
+\vspace{1mm}
+\normalsize
+
+
+Este reporte[^1] contiene las metas correspondientes al equipo de oordinación de Fiscalías Especializadas en Materia Ambiental en el periodo comprendido entre el **`r day(Inicio_periodo)` de `r Mes_inicio` al `r day(Fin)` de `r Mes_fin` de `r year(now())`**:
+
+
+```{r}
+# III. Seleccionando data ----
+
+datos_final <- filter(datos_final,datos_final$F_PRO >= Inicio_periodo & datos_final$F_PRO <= Fin)
+datos_final <- arrange(datos_final, F_PRO)
+
+# IV. Creando tabla de anexo ----
+
+ENTREGABLE <- data.frame(
+ "No." = seq(1:nrow(datos_final)),
+  "Caso_Cofema" = datos_final$Caso_Cofema,
+  "Fecha_entrega_proyecto" = as.character(datos_final$F_PRO, format="%d/%m/%Y"),
+  "HT" = datos_final$HT,
+  "Detalle" = datos_final$Detalle,
+  "Especialista" = datos_final$ESPECIALISTA,
+  "Tienpo_atención" = datos_final$TIEMPO_RESP
+  
+)
+
+CABECERAS <- c("META PROPUESTA","PORCENTAJE CUMPLIDO", "CUMPLIMIENTO META")
+  
+# Tabla 1
+META_PROPUESTA <- meta_propuesta
+datos_meta1 <- filter(datos_final,datos_final$Tarea == Tarea1)
+datos_meta1 = datos_meta1[!is.na(datos_meta1$TIEMPO_RESP), ]
+PROMEDIO_M1 <- mean(datos_meta1$TIEMPO_RESP)
+if(PROMEDIO_M1 <= 30) {
+PORCENTAJE_CUMPLIDO <- 1
+} else {
+
+PORCENTAJE_CUMPLIDO <- 30/PROMEDIO_M1
+
+}
+
+
+if(PORCENTAJE_CUMPLIDO==1) {
+CUMPLIMIENTO_META <- "Cumplió"
+} else if(PORCENTAJE_CUMPLIDO>1) {
+  CUMPLIMIENTO_META <- "Superó"
+} else {
+  CUMPLIMIENTO_META <- "No cumplió"
+}
+
+PORCENTAJE_CUMPLIDO <- paste(round(100*PORCENTAJE_CUMPLIDO, 2), "%", sep="")
+
+Tabla1 <- data.frame(META_PROPUESTA,PORCENTAJE_CUMPLIDO, CUMPLIMIENTO_META)
+colnames(Tabla1) <- CABECERAS
+#crenado tabla 2
+
+META_PROPUESTA2 <- meta_propuesta
+datos_meta2 <- filter(datos_final,datos_final$Tarea == Tarea2| 
+datos_final$Tarea == Tarea3| 
+datos_final$Tarea== Tarea4)
+datos_meta2 = datos_meta2[!is.na(datos_meta2$TIEMPO_RESP), ]
+
+PROMEDIO_M2 <- mean(datos_meta2$TIEMPO_RESP)
+if(PROMEDIO_M2 <= 30) {
+PORCENTAJE_CUMPLIDO2 <- 1
+} else {
+
+PORCENTAJE_CUMPLIDO2 <- 30/PROMEDIO_M2
+PORCENTAJE_CUMPLIDO2 <- paste(round(100*PORCENTAJE_CUMPLIDO2, 2), "%", sep="")
+}
+
+if(PORCENTAJE_CUMPLIDO2==1) {
+CUMPLIMIENTO_META2 <- "Cumplió"
+} else if(PORCENTAJE_CUMPLIDO2>1){
+  CUMPLIMIENTO_META2 <- "Superó"
+} else {
+  CUMPLIMIENTO_META2 <- "No cumplió"
+}
+
+PORCENTAJE_CUMPLIDO2 <- paste(round(100*PORCENTAJE_CUMPLIDO2, 2), "%", sep="")
+Tabla2 <- data.frame(META_PROPUESTA2,PORCENTAJE_CUMPLIDO2, CUMPLIMIENTO_META2)
+colnames(Tabla2) <- CABECERAS
+```
+
+```{r}
+# IV. Gráfico de tablas
+
+# IV.1 Graficar tabla 1 ----
+kable(Tabla1, caption = meta1, align= "ccccc", format = "latex") %>%
+kable_styling(font_size = 10, bootstrap_options = "bordered", latex_options = "HOLD_position", full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "3.5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "4.5cm") %>%
+column_spec(3 , latex_valign = "m", width = "4.5cm",border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+# IV.2 Graficar tabla 2 ----
+kable(Tabla2, caption = meta2, align= "ccccc", format = "latex") %>%
+kable_styling(font_size = 10, bootstrap_options = "bordered", latex_options = "HOLD_position", full_width = FALSE) %>%
+column_spec(1 , latex_valign = "m", width = "3.5cm", border_left = TRUE) %>%
+column_spec(2 , latex_valign = "m", width = "4.5cm") %>%
+column_spec(3 , latex_valign = "m", width = "4.5cm", border_right = TRUE) %>%
+row_spec(0, bold = TRUE, color = "white", background = "#1d85bf", align = "c")
+
+# Pegado de información
+carpeta = file.path(dir, "COFEMA")
+
+# V. Exportar anexo ----
+ENTREGABLE <- as.data.frame(ENTREGABLE)
+n_archivo=paste0("COFEMA - ",Nombre,".xlsx")
+write.xlsx(ENTREGABLE,file = file.path(carpeta, n_archivo),
+           sheetName="Data")
+
+```
+
+\vspace{5mm}
+
+Se adjunta la evidencia correspondiente. Es todo cuanto tengo que informar.
+
+[^1]: Este reporte fue elaborado en **[R Studio](https://rstudio.com/)** utilizando [\Rlogo](https://www.r-project.org/) (versión `r getRversion()`) y [\LaTeX](https://www.latex-project.org/).
+
